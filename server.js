@@ -5,16 +5,14 @@ const OpenAI = require("openai");
 
 const app = express();
 
-// CORS + JSON parsing
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
-// OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Wikipedia summary fetcher
+// Wikipedia summary
 async function fetchWikipediaSummary(title) {
   try {
     const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
@@ -25,7 +23,7 @@ async function fetchWikipediaSummary(title) {
       extract: data.extract,
       image: data.thumbnail?.source || null
     };
-  } catch (err) {
+  } catch {
     return null;
   }
 }
@@ -43,36 +41,27 @@ async function getNutrition(label) {
   return null;
 }
 
-// OpenAI Vision analyzer
-async function analyzeImage(imageDataUrl, mode = "general") {
+// OpenAI enrichment
+async function enrichLabelWithAI(label, mode = "general") {
   const prompts = {
-    general: "Identify the main object in this image. Respond in the format: label | confidence (0-1) | description.",
-    plant: "Identify the plant species in this image. Respond in the format: label | confidence (0-1) | botanical description.",
-    food: "Identify the food item in this image. Respond in the format: label | confidence (0-1) | nutrition summary."
+    general: `You are an AR assistant. Describe the object "${label}" in 2–3 sentences.`,
+    plant: `You are a botanist. Describe the plant "${label}" in 2–3 sentences.`,
+    food: `You are a nutritionist. Describe the food "${label}" in 2–3 sentences, focusing on health and usage.`
   };
 
   const prompt = prompts[mode] || prompts.general;
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "text", text: prompt },
-          { type: "image_url", image_url: imageDataUrl }
-        ]
-      }
-    ]
+    messages: [{ role: "user", content: prompt }]
   });
 
   const text = response.choices[0].message.content || "";
-  const [label, conf, description] = text.split("|").map(s => s?.trim());
 
   return {
-    label: label || "Unknown",
-    confidence: parseFloat(conf) || 0.0,
-    description: description || "No description available.",
+    label,
+    confidence: 1.0,
+    description: text,
     preview: null
   };
 }
@@ -80,11 +69,11 @@ async function analyzeImage(imageDataUrl, mode = "general") {
 // Main API route
 app.post("/analyze", async (req, res) => {
   try {
-    const { image, mode } = req.body;
-    if (!image) return res.status(400).json({ error: "No image provided" });
+    const { label, mode } = req.body;
+    if (!label) return res.status(400).json({ error: "No label provided" });
 
-    // Step 1: OpenAI Vision
-    const base = await analyzeImage(image, mode);
+    // Step 1: OpenAI enrichment
+    const base = await enrichLabelWithAI(label, mode);
 
     // Step 2: Wikipedia enrichment
     const wiki = await fetchWikipediaSummary(base.label);
@@ -105,7 +94,6 @@ app.post("/analyze", async (req, res) => {
   }
 });
 
-// Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log("Backend running on port " + PORT);
