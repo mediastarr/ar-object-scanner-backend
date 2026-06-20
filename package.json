@@ -4,7 +4,7 @@
   "description": "AI backend for AR Object Scanner",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node backend.js"
   },
   "dependencies": {
     "express": "^4.19.0",
