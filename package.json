@@ -1,16 +1,14 @@
 {
   "name": "ar-object-scanner-backend",
   "version": "1.0.0",
-  "description": "AI backend for AR Object Scanner",
   "main": "server.js",
   "scripts": {
-    "start": "node backend.js"
+    "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.19.0",
     "cors": "^2.8.5",
-    "body-parser": "^1.20.2",
-    "openai": "^4.0.0",
-    "node-fetch": "^3.3.2"
+    "express": "^4.19.2",
+    "node-fetch": "^2.6.7",
+    "openai": "^4.0.0"
   }
 }
