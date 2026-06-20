@@ -1,12 +1,13 @@
 const express = require("express");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const fetch = require("node-fetch");
 const OpenAI = require("openai");
 
 const app = express();
+
+// CORS + JSON parsing
 app.use(cors());
-app.use(bodyParser.json({ limit: "5mb" }));
+app.use(express.json({ limit: "10mb" }));
 
 // OpenAI client
 const openai = new OpenAI({
@@ -29,7 +30,7 @@ async function fetchWikipediaSummary(title) {
   }
 }
 
-// Nutrition stub (replace with real API later)
+// Nutrition stub
 async function getNutrition(label) {
   if (label.toLowerCase() === "banana") {
     return {
@@ -58,8 +59,8 @@ async function analyzeImage(imageDataUrl, mode = "general") {
       {
         role: "user",
         content: [
-          { type: "input_text", text: prompt },
-          { type: "input_image", image_url: imageDataUrl }
+          { type: "text", text: prompt },
+          { type: "image_url", image_url: imageDataUrl }
         ]
       }
     ]
